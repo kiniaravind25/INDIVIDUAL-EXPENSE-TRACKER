@@ -2,6 +2,7 @@ package com.project.expenseTracker.service;
 
 
 import com.project.expenseTracker.dto.RegisterRequest;
+import com.project.expenseTracker.exception.UserNotFoundException;
 import com.project.expenseTracker.model.Role;
 import com.project.expenseTracker.model.User;
 import com.project.expenseTracker.repository.RoleRepository;
@@ -26,13 +27,13 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public String registerUser(RegisterRequest request) {
+    public String registerUser(RegisterRequest request) throws UserNotFoundException {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
 
         Role userRole = roleRepository.findByName("ROLE_USER")
-            .orElseThrow(() -> new RuntimeException("ROLE_USER not found"));
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         User user = new User();
         user.setUsername(request.getUsername());
