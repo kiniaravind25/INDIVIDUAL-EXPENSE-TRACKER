@@ -1,6 +1,7 @@
 package com.project.expenseTracker.service;
 
 
+import com.project.expenseTracker.dto.LoginRequest;
 import com.project.expenseTracker.dto.RegisterRequest;
 import com.project.expenseTracker.exception.UserNotFoundException;
 import com.project.expenseTracker.model.Role;
@@ -19,21 +20,19 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public AuthService(UserRepository userRepository,
-                       RoleRepository roleRepository,
-                       PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    public String registerUser(RegisterRequest request) throws UserNotFoundException {
+    public String registerUser(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
 
         Role userRole = roleRepository.findByName("ROLE_USER")
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new RuntimeException("ROLE_USER not found"));
 
         User user = new User();
         user.setUsername(request.getUsername());
@@ -44,5 +43,17 @@ public class AuthService {
         userRepository.save(user);
 
         return "User registered successfully";
+    }
+
+    public String loginUser(LoginRequest request) throws UserNotFoundException {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        var decryptedPassword = passwordEncoder.matches(request.getPassword(), user.getPassword());
+        if (!decryptedPassword) {
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        return "Login successful";
     }
 }
