@@ -6,6 +6,7 @@ import com.project.expenseTracker.exception.InvalidAmountException;
 import com.project.expenseTracker.exception.TitleCannotBeNullException;
 import com.project.expenseTracker.exception.UserNotFoundException;
 import com.project.expenseTracker.service.ExpenseService;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -75,7 +76,11 @@ public class ExpenseController {
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<List<ExpenseDto>> filterExpenses(@RequestParam String username, @RequestParam(required = false) String category, @RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
+    public ResponseEntity<List<ExpenseDto>> filterExpenses(
+            @RequestParam String username,
+            @RequestParam(required = false) String category,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate){
         try {
             var result = expenseService.filterExpenseByDate(username, category, startDate, endDate);
             return new ResponseEntity<>(result, HttpStatus.OK);

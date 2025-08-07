@@ -73,7 +73,7 @@ class ExpenseServiceTest {
         ExpenseDto expenseDto = new ExpenseDto();
         expenseDto.setTitle("Test Expense");
         expenseDto.setAmount(BigDecimal.valueOf(100));
-        expenseDto.setCategory("Food");
+        expenseDto.setCategory("FOOD");
 
         String result = expenseService.addTheExpense(expenseDto, "testuser");
 
