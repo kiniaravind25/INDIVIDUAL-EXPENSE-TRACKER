@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -130,6 +131,22 @@ public class ExpenseService {
         if (expenses.isEmpty()) {
             log.info("No expenses found for the given criteria");
         }
+        return expenseMapper.mapToResponse(expenses);
+
+    }
+
+    public List<ExpenseDto> getMonthlyExpenses(String username, Month month) throws UserNotFoundException  {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UserNotFoundException(CommonConstants.USER_NOT_FOUND));
+
+        List<Expense> expenses = expenseRepository.findByUser(user)
+                .stream()
+                .filter(expense -> expense.getExpenseDate().getMonth()==month)
+                .toList();
+
+        if(expenses.isEmpty()) {
+            log.info("No expenses found for the month: {}", month);
+        }
+        log.info("Monthly expenses found for the month: {}", month);
         return expenseMapper.mapToResponse(expenses);
 
     }

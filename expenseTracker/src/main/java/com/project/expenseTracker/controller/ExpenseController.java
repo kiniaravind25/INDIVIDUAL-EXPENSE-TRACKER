@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 
@@ -22,34 +23,35 @@ import java.util.List;
 @RequestMapping("/expenseTracker")
 public class ExpenseController {
 
-   private final ExpenseService expenseService;
+    private final ExpenseService expenseService;
 
-   public ExpenseController(ExpenseService expenseService) {
+    public ExpenseController(ExpenseService expenseService) {
         this.expenseService = expenseService;
-   }
+    }
 
     @PostMapping("/add")
-    public ResponseEntity<String> addExpense(@RequestBody ExpenseDto expense, @RequestParam String username)  {
-       try{
-        var finalResponse = expenseService.addTheExpense(expense,username);
-        return new ResponseEntity<>(finalResponse, HttpStatus.CREATED);
-    }catch (CategoryNotFoundException | TitleCannotBeNullException | InvalidAmountException | UserNotFoundException e){
-           log.error("Invalid Input From the User :{}",e.getMessage());
-           return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-       }
+    public ResponseEntity<String> addExpense(@RequestBody ExpenseDto expense, @RequestParam String username) {
+        try {
+            var finalResponse = expenseService.addTheExpense(expense, username);
+            return new ResponseEntity<>(finalResponse, HttpStatus.CREATED);
+        } catch (CategoryNotFoundException | TitleCannotBeNullException | InvalidAmountException |
+                 UserNotFoundException e) {
+            log.error("Invalid Input From the User :{}", e.getMessage());
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping
-    public ResponseEntity<List<ExpenseDto>> getUserName(@RequestParam String username){
-      try{
-          var result = expenseService.getAllExpensesByUser(username);
-          return new ResponseEntity<>(result, HttpStatus.CREATED);
-      }catch (UsernameNotFoundException e){
-          log.error("User Not Found :{}",e.getMessage());
-          return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    public ResponseEntity<List<ExpenseDto>> getUserName(@RequestParam String username) {
+        try {
+            var result = expenseService.getAllExpensesByUser(username);
+            return new ResponseEntity<>(result, HttpStatus.CREATED);
+        } catch (UsernameNotFoundException e) {
+            log.error("User Not Found :{}", e.getMessage());
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
-      }
-   }
+        }
+    }
 
     @DeleteMapping("/{expenseId}")
     public ResponseEntity<String> deleteExpenseById(@PathVariable Long expenseId, @RequestParam String username) {
@@ -74,14 +76,25 @@ public class ExpenseController {
 
     @GetMapping("/filter")
     public ResponseEntity<List<ExpenseDto>> filterExpenses(@RequestParam String username, @RequestParam(required = false) String category, @RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
-       try {
-           var result = expenseService.filterExpenseByDate(username, category, startDate, endDate);
-           return  new ResponseEntity<>(result, HttpStatus.OK);
-       }catch (UserNotFoundException e){
-              log.error("Data not found :{}",e.getMessage());
-              return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-         }
-       }
+        try {
+            var result = expenseService.filterExpenseByDate(username, category, startDate, endDate);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        } catch (UserNotFoundException e) {
+            log.error("Data not found :{}", e.getMessage());
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/searchByMonth")
+    public ResponseEntity<List<ExpenseDto>> searchExpensesByMonth(@RequestParam String username, @RequestParam Month month) {
+        try {
+            var result = expenseService.getMonthlyExpenses(username, month);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        } catch (UserNotFoundException e) {
+            log.error("User not found: {}", e.getMessage());
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
 
+    }
 }

@@ -16,7 +16,7 @@ public class SecurityConfig {
         http
             .csrf().disable()
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/expenseTracker/add", "/expenseTracker","/expenseTracker/total","/expenseTracker/","/expenseTracker/*","/expenseTracker/filter").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/expenseTracker/add", "/expenseTracker","/expenseTracker/total","/expenseTracker/","/expenseTracker/*","/expenseTracker/filter","expenseTracker/searchByMonth").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
