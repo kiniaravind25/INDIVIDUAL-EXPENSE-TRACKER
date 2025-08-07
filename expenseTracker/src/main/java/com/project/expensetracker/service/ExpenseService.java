@@ -1,0 +1,152 @@
+package com.project.expensetracker.service;
+
+import ch.qos.logback.core.util.StringUtil;
+import com.project.expensetracker.constant.CommonConstants;
+import com.project.expensetracker.dto.ExpenseDto;
+import com.project.expensetracker.exception.CategoryNotFoundException;
+import com.project.expensetracker.exception.InvalidAmountException;
+import com.project.expensetracker.exception.TitleCannotBeNullException;
+import com.project.expensetracker.exception.UserNotFoundException;
+import com.project.expensetracker.mapper.ExpenseMapper;
+import com.project.expensetracker.model.Expense;
+import com.project.expensetracker.model.User;
+import com.project.expensetracker.repository.ExpenseRepository;
+import com.project.expensetracker.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.Month;
+import java.util.List;
+
+@Slf4j
+@Service
+public class ExpenseService {
+
+    private final ExpenseRepository expenseRepository;
+    private final UserRepository userRepository;
+    private final ExpenseMapper expenseMapper;
+
+
+    public ExpenseService(ExpenseRepository expenseRepository, UserRepository userRepository, ExpenseMapper expenseMapper) {
+        this.expenseRepository = expenseRepository;
+        this.userRepository = userRepository;
+        this.expenseMapper = expenseMapper;
+    }
+
+
+    public String addTheExpense(ExpenseDto expense, String username) throws TitleCannotBeNullException, InvalidAmountException, CategoryNotFoundException, UserNotFoundException {
+
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UserNotFoundException("User Not Found"));
+
+        if (StringUtil.isNullOrEmpty(expense.getTitle())) {
+            throw new TitleCannotBeNullException("Users Title is empty");
+
+        }
+        if (expense.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidAmountException("Amount cannot be 0");
+
+        }
+        if (!CommonConstants.CATEGORY.contains(expense.getCategory())) {
+            throw new CategoryNotFoundException("Category is not valid");
+
+        }
+
+        Expense expenseToAdd = new Expense();
+        expenseToAdd.setTitle(expense.getTitle());
+        expenseToAdd.setAmount(expense.getAmount());
+        expenseToAdd.setCategory(expense.getCategory());
+        expenseToAdd.setExpenseDate(expense.getExpenseDate());
+        expenseToAdd.setDescription(expense.getDescription());
+        expenseToAdd.setUser(user);
+        expenseRepository.save(expenseToAdd);
+        log.info("Expense added successfully");
+
+        return "User's expense added successfully";
+    }
+
+    public List<ExpenseDto> getAllExpensesByUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(CommonConstants.USER_NOT_FOUND));
+
+        List<Expense> expenses = expenseRepository.findByUser(user);
+        return expenseMapper.mapToResponse(expenses);
+    }
+
+    public String deleteExpenseById(Long expenseId, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(CommonConstants.USER_NOT_FOUND));
+
+        Expense expense = expenseRepository.findByIdAndUser(expenseId, user)
+                .orElseThrow(() -> new IllegalArgumentException(CommonConstants.EXPENSE_NOT_FOUND));
+
+        expenseRepository.delete(expense);
+        log.info("Expense with ID {} deleted successfully", expenseId);
+
+        return "Expense deleted successfully";
+    }
+
+    public String updateExpense(Long expenseId, ExpenseDto updatedExpense, String username) throws TitleCannotBeNullException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(CommonConstants.USER_NOT_FOUND));
+
+        Expense expense = expenseRepository.findByIdAndUser(expenseId, user)
+                .orElseThrow(() -> new IllegalArgumentException(CommonConstants.EXPENSE_NOT_FOUND));
+
+        if (StringUtil.isNullOrEmpty(updatedExpense.getTitle())) {
+            throw new TitleCannotBeNullException("Title cannot be null or empty");
+        }
+
+        expense.setTitle(updatedExpense.getTitle());
+        expense.setAmount(updatedExpense.getAmount());
+        expense.setCategory(updatedExpense.getCategory());
+        expense.setExpenseDate(updatedExpense.getExpenseDate());
+        expense.setDescription(updatedExpense.getDescription());
+
+        expenseRepository.save(expense);
+        log.info("Expense with ID {} updated successfully", expenseId);
+
+        return "Expense updated successfully";
+    }
+
+    public BigDecimal calculateTotalExpenses(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(CommonConstants.USER_NOT_FOUND));
+
+        List<Expense> expenses = expenseRepository.findByUser(user);
+
+        return expenses.stream()
+                .map(Expense::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+
+    public List<ExpenseDto> filterExpenseByDate(String username, String category, LocalDate startDate, LocalDate endDate) throws UserNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(CommonConstants.USER_NOT_FOUND));
+        List<Expense> expenses = expenseRepository.filterExpenses(user, category, startDate, endDate);
+        if (expenses.isEmpty()) {
+            log.info("No expenses found for the given criteria");
+        }
+        return expenseMapper.mapToResponse(expenses);
+
+    }
+
+    public List<ExpenseDto> getMonthlyExpenses(String username, Month month) throws UserNotFoundException  {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UserNotFoundException(CommonConstants.USER_NOT_FOUND));
+
+        List<Expense> expenses = expenseRepository.findByUser(user)
+                .stream()
+                .filter(expense -> expense.getExpenseDate().getMonth()==month)
+                .toList();
+
+        if(expenses.isEmpty()) {
+            log.info("No expenses found for the month: {}", month);
+        }
+        log.info("Monthly expenses found for the month: {}", month);
+        return expenseMapper.mapToResponse(expenses);
+
+    }
+}
