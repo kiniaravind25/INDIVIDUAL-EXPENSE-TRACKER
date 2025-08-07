@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -47,7 +48,26 @@ public class ExpenseController {
           return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
       }
+   }
 
+    @DeleteMapping("/{expenseId}")
+    public ResponseEntity<String> deleteExpenseById(@PathVariable Long expenseId, @RequestParam String username) {
+        String result = expenseService.deleteExpenseById(expenseId, username);
+        return ResponseEntity.ok(result);
+    }
 
+    @PutMapping("/{expenseId}")
+    public ResponseEntity<String> updateExpense(
+            @PathVariable Long expenseId,
+            @RequestBody ExpenseDto updatedExpense,
+            @RequestParam String username) throws Exception {
+        String result = expenseService.updateExpense(expenseId, updatedExpense, username);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/total")
+    public ResponseEntity<BigDecimal> calculateTotalExpenses(@RequestParam String username) {
+        BigDecimal total = expenseService.calculateTotalExpenses(username);
+        return ResponseEntity.ok(total);
     }
 }

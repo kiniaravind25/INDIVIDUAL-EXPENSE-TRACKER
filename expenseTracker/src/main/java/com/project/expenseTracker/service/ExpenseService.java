@@ -18,8 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
-
 @Slf4j
 @Service
 public class ExpenseService {
@@ -68,10 +66,57 @@ public class ExpenseService {
 
     public List<ExpenseDto> getAllExpensesByUser(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException(CommonConstants.USER_NOT_FOUND));
 
         List<Expense> expenses = expenseRepository.findByUser(user);
         return expenseMapper.mapToResponse(expenses);
+    }
+
+    public String deleteExpenseById(Long expenseId, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(CommonConstants.USER_NOT_FOUND));
+
+        Expense expense = expenseRepository.findByIdAndUser(expenseId, user)
+                .orElseThrow(() -> new IllegalArgumentException(CommonConstants.EXPENSE_NOT_FOUND));
+
+        expenseRepository.delete(expense);
+        log.info("Expense with ID {} deleted successfully", expenseId);
+
+        return "Expense deleted successfully";
+    }
+
+    public String updateExpense(Long expenseId, ExpenseDto updatedExpense, String username) throws TitleCannotBeNullException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(CommonConstants.USER_NOT_FOUND));
+
+        Expense expense = expenseRepository.findByIdAndUser(expenseId, user)
+                .orElseThrow(() -> new IllegalArgumentException(CommonConstants.EXPENSE_NOT_FOUND));
+
+        if (StringUtil.isNullOrEmpty(updatedExpense.getTitle())) {
+            throw new TitleCannotBeNullException("Title cannot be null or empty");
+        }
+
+        expense.setTitle(updatedExpense.getTitle());
+        expense.setAmount(updatedExpense.getAmount());
+        expense.setCategory(updatedExpense.getCategory());
+        expense.setExpenseDate(updatedExpense.getExpenseDate());
+        expense.setDescription(updatedExpense.getDescription());
+
+        expenseRepository.save(expense);
+        log.info("Expense with ID {} updated successfully", expenseId);
+
+        return "Expense updated successfully";
+    }
+
+    public BigDecimal calculateTotalExpenses(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(CommonConstants.USER_NOT_FOUND));
+
+        List<Expense> expenses = expenseRepository.findByUser(user);
+
+        return expenses.stream()
+                .map(Expense::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
 
