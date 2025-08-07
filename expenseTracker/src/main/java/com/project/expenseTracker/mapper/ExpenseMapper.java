@@ -13,5 +13,7 @@ public interface ExpenseMapper {
     ExpenseMapper INSTANCE = Mappers.getMapper(ExpenseMapper.class);
         List<ExpenseDto> mapToResponse(List<Expense> expense);
 
+        ExpenseDto mapToResponse(Expense expense);
+
 
 }

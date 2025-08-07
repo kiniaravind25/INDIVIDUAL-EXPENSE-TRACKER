@@ -17,7 +17,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 public class ExpenseService {
@@ -27,26 +30,26 @@ public class ExpenseService {
     private final ExpenseMapper expenseMapper;
 
 
-  public ExpenseService(ExpenseRepository expenseRepository, UserRepository userRepository,ExpenseMapper expenseMapper) {
+    public ExpenseService(ExpenseRepository expenseRepository, UserRepository userRepository, ExpenseMapper expenseMapper) {
         this.expenseRepository = expenseRepository;
         this.userRepository = userRepository;
         this.expenseMapper = expenseMapper;
     }
 
 
-    public String addTheExpense(ExpenseDto expense,String username) throws TitleCannotBeNullException, InvalidAmountException, CategoryNotFoundException, UserNotFoundException {
+    public String addTheExpense(ExpenseDto expense, String username) throws TitleCannotBeNullException, InvalidAmountException, CategoryNotFoundException, UserNotFoundException {
 
-      User user = userRepository.findByUsername(username).orElseThrow(() ->new UserNotFoundException("User Not Found"));
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UserNotFoundException("User Not Found"));
 
-        if(StringUtil.isNullOrEmpty(expense.getTitle()) ){
-          throw new TitleCannotBeNullException("Users Title is empty");
+        if (StringUtil.isNullOrEmpty(expense.getTitle())) {
+            throw new TitleCannotBeNullException("Users Title is empty");
 
-      }
-        if(expense.getAmount().compareTo(BigDecimal.ZERO)<0){
+        }
+        if (expense.getAmount().compareTo(BigDecimal.ZERO) < 0) {
             throw new InvalidAmountException("Amount cannot be 0");
 
         }
-        if(expense.getCategory().contains(CommonConstants.CATEGORY)){
+        if (!CommonConstants.CATEGORY.contains(expense.getCategory())) {
             throw new CategoryNotFoundException("Category is not valid");
 
         }
@@ -120,4 +123,14 @@ public class ExpenseService {
     }
 
 
+    public List<ExpenseDto> filterExpenseByDate(String username, String category, LocalDate startDate, LocalDate endDate) throws UserNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(CommonConstants.USER_NOT_FOUND));
+        List<Expense> expenses = expenseRepository.filterExpenses(user, category, startDate, endDate);
+        if (expenses.isEmpty()) {
+            log.info("No expenses found for the given criteria");
+        }
+        return expenseMapper.mapToResponse(expenses);
+
+    }
 }

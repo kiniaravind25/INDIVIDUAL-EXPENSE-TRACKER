@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 
@@ -70,4 +71,17 @@ public class ExpenseController {
         BigDecimal total = expenseService.calculateTotalExpenses(username);
         return ResponseEntity.ok(total);
     }
+
+    @GetMapping("/filter")
+    public ResponseEntity<List<ExpenseDto>> filterExpenses(@RequestParam String username, @RequestParam(required = false) String category, @RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
+       try {
+           var result = expenseService.filterExpenseByDate(username, category, startDate, endDate);
+           return  new ResponseEntity<>(result, HttpStatus.OK);
+       }catch (UserNotFoundException e){
+              log.error("Data not found :{}",e.getMessage());
+              return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+         }
+       }
+
+
 }
